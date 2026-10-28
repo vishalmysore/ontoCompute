@@ -55,23 +55,45 @@ Two more things come out of this design:
 
 ## What it showed
 
-One run in my browser: Qwen2.5-3B, temperature 0.7, three runs per question, on the five questions that cover the main shapes. Two prose runs on the harbor-cli chain question went through before I stopped the run.
+All twelve questions, five runs each in each mode, temperature 0.7, on two models running on a laptop's integrated GPU: 240 runs in total.
 
-| Question | Prose | Compiled |
-|---|---|---|
-| Which packages does harbor-core depend on directly? | 2 of 3 right, 2 different answers | 3 of 3, same answer every time |
-| Which packages does harbor-cli depend on, directly or indirectly? | 0 of 2 right, 2 different answers | 2 of 2 |
-| Which packages are release-blocked? (join) | 0 of 3 right, 3 different answers | 3 of 3, same answer every time |
-| Is otter-ui release-blocked? (join) | 3 of 3 | 3 of 3 |
-| Is kestrel release-blocked? (join) | 1 of 3 right | 3 of 3 |
+| | Prose | Compiled | Reasoner only |
+|---|---|---|---|
+| Qwen2.5-7B | 32 of 60 (53%) | 60 of 60 (100%) | 12 of 12 |
+| Qwen2.5-3B | 30 of 60 (50%) | 39 of 60 (65%) | 12 of 12 |
 
-Prose mode got 43% of its runs right; compiled mode got all of them.
+![Qwen2.5-7B after all 120 runs, with the join question selected](images/run-qwen2.5-7b.png)
 
-The wrong answers are the interesting part. In two of the three kestrel runs, the model answered "no" and the page labelled them *stopped at direct dependencies*: kestrel is blocked through skein to brindle, two hops away, and the model never followed the path past skein. One of the harbor-cli runs listed only the two direct dependencies; the other walked most of the chain but left out brindle, four hops down. On "which packages are release-blocked?" the three prose runs gave three different wrong lists. In compiled mode the model wrote the same one-line query every time, and the reasoner returned the same five packages every time.
+Per question, for Qwen2.5-7B (right out of five):
 
-This is a small model on a laptop GPU, not the large hosted models in Cekikj's study. A bigger model will apply English rules more reliably. The page lets you pick larger models and repeat the runs. What doesn't depend on the model is that compiled mode can't drop a clause and has no randomness of its own: once the query is written, the answer is fixed. The model's job shrinks to translation, which even a small model does well.
+| Question | Shape | Prose | Compiled |
+|---|---|---|---|
+| Which packages does harbor-core depend on directly? | direct | 5 | 5 |
+| Which packages does harbor-cli depend on, directly or indirectly? | chain | 4 | 5 |
+| Does otter-ui depend on quill, directly or indirectly? | chain | 1 | 5 |
+| Does ferrous-json depend on brindle, directly or indirectly? | chain | 5 | 5 |
+| Which packages depend on brindle, directly or indirectly? | chain | 0 | 5 |
+| How many packages depend on tinyhash, directly or indirectly? | chain | 0 | 5 |
+| Which advisories is pallet exposed to? | property chain | 0 | 5 |
+| Which packages are release-blocked? | join | 0 | 5 |
+| Is otter-ui release-blocked? | join | 4 | 5 |
+| Is kestrel release-blocked? | join | 3 | 5 |
+| Who maintains quill? | not modeled | 5 | 5 |
+| When was ADV-105 published? | not modeled | 5 | 5 |
 
-Speed was similar in both modes, about 10 to 12 seconds a run, mostly spent reading the prompt. The reasoner itself takes under a millisecond. Prose mode gets slow when the model starts reasoning out loud: one chain question took 75 seconds and was still wrong.
+The larger model barely moved prose mode, from 50% to 53%. It moved compiled mode from 65% to 100%. Applying English rules is the hard part, and it stayed hard. Translating a question into a query is the easy part, and the larger model did it without a single mistake.
+
+Three things stand out in the wrong answers.
+
+**Consistent is not the same as correct.** On "which packages are release-blocked?" the 7B model gave the same wrong list, harbor-cli and otter-ui, all five times. On "how many packages depend on tinyhash?" it said 3 all five times; the answer is 4. Repeating a question exposes randomness, but a model that is wrong the same way every time passes that test. Only an answer that is computed catches it.
+
+**Missing steps can be named.** On "does otter-ui depend on quill?", four of the five prose runs said no, and the page labelled each one *stopped at direct dependencies*: quill is four hops away, through pallet, lattice and mothball. On "is otter-ui release-blocked?", the one wrong run is the answer you get when a clause of the join is dropped. The property chain question, "which advisories is pallet exposed to?", was never answered correctly in prose by either model.
+
+**Compiled failures are visible.** The smaller model's compiled mistakes were all translation mistakes: a typo in a package name, SPARQL syntax the query language doesn't accept, an invented "publishedOn" property, or the maintainer question turned into an unrelated yes/no query. Every one of them is a one-line query you can read and see is wrong. A wrong prose answer is just a wrong list. To be fair to prose mode, the 3B model was better at saying "not modeled" in prose (10 of 10) than through a query (2 of 10).
+
+Speed was about the same in both modes for each model: around 13 seconds a run for 3B and 30 seconds for 7B, almost all of it the model reading its prompt. The reasoner takes under 4 milliseconds.
+
+These are small models on a laptop, not the large hosted models in Cekikj's study, and a larger model will apply English rules more reliably. What doesn't depend on the model is that compiled mode can't drop a clause and has no randomness of its own: once the query is written, the answer is fixed. The raw results for both models are in the repository under `docs/results/`.
 
 ## Why this is useful
 
