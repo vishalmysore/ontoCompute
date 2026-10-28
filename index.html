@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OntoCompute</title>
+    <meta name="description" content="Rules as code, not prose. The same ontology questions answered by a model reading English rules and by a reasoner running OWL axioms, side by side, in a browser tab." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='6' cy='16' r='4' fill='%233fb394'/%3E%3Ccircle cx='16' cy='6' r='4' fill='%233fb394'/%3E%3Ccircle cx='26' cy='16' r='4' fill='%23f2a541'/%3E%3Cpath d='M9 13l4-4M19 9l4 4' stroke='%23889' stroke-width='2'/%3E%3Cpath d='M10 16h12' stroke='%23f2a541' stroke-width='2' stroke-dasharray='3 2'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <h1>Onto<span>Compute</span></h1>
+        <p class="tag">Rules as code, not prose. OWL has had a keyword for “transitive” since 2004.</p>
+      </div>
+      <a class="repo" href="https://github.com/vishalmysore/ontoCompute" target="_blank" rel="noopener">GitHub</a>
+    </header>
+
+    <main>
+      <section class="intro card">
+        <p>
+          An ontology can state a rule two ways. <b>Prose</b>: write the rule as English sentences and let a language model apply it while it reads the facts.
+          <b>Compiled</b>: write the rule as an OWL axiom or a Datalog rule, let a reasoner apply it, and use the model only to turn the question into a query.
+          This page asks the same twelve questions both ways, several times each, and counts how often the answer is right, how many different answers come back, and how long it takes.
+          Everything runs in this tab: the reasoner is a few hundred lines of TypeScript, the model runs on your GPU with WebLLM.
+        </p>
+      </section>
+
+      <section class="layout">
+        <aside class="side">
+          <div class="card">
+            <h2>The rules, both ways</h2>
+            <ol id="rules" class="rules"></ol>
+            <details class="source">
+              <summary>Ontology (Turtle) and rules file</summary>
+              <pre id="ttl"></pre>
+              <pre id="rules-src"></pre>
+            </details>
+          </div>
+
+          <div class="card">
+            <h2>Model</h2>
+            <p class="muted small" id="gpu-note">Runs on your GPU with WebLLM. The first load downloads the model (about 1 GB for 1.5B, 2 GB for 3B) and caches it.</p>
+            <select id="model" aria-label="Model"></select>
+            <div class="row">
+              <label class="inline">Runs per question
+                <select id="runs"><option>1</option><option selected>3</option><option>5</option><option>10</option></select>
+              </label>
+              <label class="inline">Temperature
+                <select id="temp"><option>0</option><option>0.3</option><option selected>0.7</option><option>1</option></select>
+              </label>
+            </div>
+            <label class="check"><input type="checkbox" id="m-prose" checked /> Prose mode</label>
+            <label class="check"><input type="checkbox" id="m-compiled" checked /> Compiled mode</label>
+            <div class="row wrap">
+              <button id="run-all" class="primary">Run every question</button>
+              <button id="run-one">Run the selected one</button>
+              <button id="stop" disabled>Stop</button>
+            </div>
+            <div class="progress" hidden><div id="progress-bar"></div></div>
+            <p id="llm-status" class="muted small"></p>
+            <div class="row wrap">
+              <button id="dl-json" class="link" disabled>Download results (JSON)</button>
+              <button id="clear" class="link">Clear results</button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="center">
+          <div id="summary" class="summary"></div>
+          <div class="table-wrap">
+            <table id="grid" class="grid">
+              <thead>
+                <tr>
+                  <th>Question</th>
+                  <th>Right answer</th>
+                  <th title="The facts and the English rules are in the prompt; the model works the answer out">Prose<span>model applies the rules</span></th>
+                  <th title="The model writes a query; the reasoner runs it over the inferred triples">Compiled<span>model writes a query</span></th>
+                  <th title="A hand-written query on the reasoner, no model at all">Reasoner<span>hand-written query</span></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="muted small legend">
+            Each dot is one run: <span class="dot ok"></span> right, <span class="dot bad"></span> wrong. Dots with the same letter gave the same answer, so a row of different letters means the same question got different answers.
+          </p>
+          <div class="toolbar">
+            <label class="check"><input type="checkbox" id="all-inferred" /> Show every inferred triple</label>
+            <label class="inline">Layout
+              <select id="direction"><option value="LR">Left → right</option><option value="TB">Top → bottom</option></select>
+            </label>
+            <span class="spacer"></span>
+            <span id="hud" class="hud"></span>
+          </div>
+          <div id="stage" class="stage pele-theme"></div>
+          <p class="muted small legend">
+            Solid arrows are stated dependencies. Dashed arrows are triples the reasoner inferred; selecting a question draws the ones its answer rests on.
+            Hexagons are advisories; red ones are critical and open. A red-outlined package is release-blocked.
+          </p>
+        </section>
+
+        <aside class="side details">
+          <div class="card" id="detail"></div>
+          <div class="card">
+            <h2>Ask your own</h2>
+            <input id="own" type="text" placeholder="e.g. Does kestrel depend on tinyhash?" aria-label="Your question" />
+            <div class="row"><button id="own-run">Ask both ways</button></div>
+            <div id="own-out" class="small"></div>
+          </div>
+          <details class="source" open>
+            <summary>Model output, streaming</summary>
+            <pre id="raw"></pre>
+          </details>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      <p class="muted small">
+        The package ecosystem is invented. Diagrams by <a href="https://pele.run" target="_blank" rel="noopener">Pele</a>, Turtle parsing by
+        <a href="https://github.com/rdfjs/N3.js" target="_blank" rel="noopener">N3.js</a>, models by <a href="https://github.com/mlc-ai/web-llm" target="_blank" rel="noopener">WebLLM</a>.
+        Results depend on the model, the temperature and your GPU; they are measured in your browser, not quoted.
+      </p>
+    </footer>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

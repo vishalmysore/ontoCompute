@@ -1,0 +1,24 @@
+{
+  "name": "ontocompute",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Rules as code, not prose: the same ontology questions answered by an LLM reading English rules and by a reasoner running OWL axioms",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --test --experimental-strip-types tests/*.test.ts"
+  },
+  "dependencies": {
+    "@mlc-ai/web-llm": "0.2.79",
+    "n3": "2.13.12",
+    "pele": "1.10.0"
+  },
+  "devDependencies": {
+    "@types/n3": "1.26.5",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  }
+}

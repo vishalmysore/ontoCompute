@@ -1,0 +1,3 @@
+# Rule 3, the one with a join: two conditions on the same advisory.
+# OWL alone cannot say this; it is the kind of rule SWRL or Datalog is for.
+IF ?p exposedTo ?a AND ?a severity critical AND ?a status open THEN ?p a ReleaseBlocked

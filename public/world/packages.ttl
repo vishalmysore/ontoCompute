@@ -1,0 +1,62 @@
+# An invented open-source package ecosystem. Every name here is made up.
+# The rules live in the schema as OWL axioms, plus one rule with a join (rules.txt).
+
+@prefix :     <https://example.org/pkg#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# ---------- schema ----------
+:Package  a owl:Class .
+:Advisory a owl:Class .
+:ReleaseBlocked a owl:Class ; rdfs:subClassOf :Package ;
+  rdfs:comment "A package that may not ship: see rules.txt." .
+
+:Severity a owl:Class .
+:critical a :Severity .  :high a :Severity .  :low a :Severity .
+:Status a owl:Class .
+:open a :Status .  :patched a :Status .
+
+# Rule 1: dependsOn is transitive, and a direct dependency is a dependency.
+:dependsOn a owl:ObjectProperty, owl:TransitiveProperty ;
+  rdfs:domain :Package ; rdfs:range :Package .
+:directlyDependsOn a owl:ObjectProperty ;
+  rdfs:subPropertyOf :dependsOn ;
+  rdfs:domain :Package ; rdfs:range :Package .
+
+:hasAdvisory a owl:ObjectProperty ; rdfs:domain :Package ; rdfs:range :Advisory .
+:severity a owl:ObjectProperty ; rdfs:domain :Advisory ; rdfs:range :Severity .
+:status   a owl:ObjectProperty ; rdfs:domain :Advisory ; rdfs:range :Status .
+
+# Rule 2: a package is exposed to every advisory on anything it depends on (an OWL 2 property chain).
+:exposedTo a owl:ObjectProperty ;
+  rdfs:domain :Package ; rdfs:range :Advisory ;
+  owl:propertyChainAxiom ( :dependsOn :hasAdvisory ) .
+
+# ---------- facts ----------
+:harbor-cli   a :Package ; :directlyDependsOn :harbor-core, :nimbus-log .
+:harbor-core  a :Package ; :directlyDependsOn :cobweb-http, :ferrous-json .
+:cobweb-http  a :Package ; :directlyDependsOn :skein, :tinyhash .
+:skein        a :Package ; :directlyDependsOn :brindle .
+:ferrous-json a :Package ; :directlyDependsOn :tinyhash .
+:otter-ui     a :Package ; :directlyDependsOn :pallet, :nimbus-log .
+:pallet       a :Package ; :directlyDependsOn :lattice .
+:lattice      a :Package ; :directlyDependsOn :mothball .
+:mothball     a :Package ; :directlyDependsOn :quill .
+:kestrel      a :Package ; :directlyDependsOn :quill, :skein .
+:nimbus-log   a :Package .
+:tinyhash     a :Package .
+:brindle      a :Package .
+:quill        a :Package .
+
+:brindle    :hasAdvisory :ADV-101 .
+:tinyhash   :hasAdvisory :ADV-102 .
+:nimbus-log :hasAdvisory :ADV-103 .
+:quill      :hasAdvisory :ADV-104 .
+:lattice    :hasAdvisory :ADV-105 .
+
+:ADV-101 a :Advisory ; :severity :critical ; :status :open .
+:ADV-102 a :Advisory ; :severity :critical ; :status :patched .
+:ADV-103 a :Advisory ; :severity :low      ; :status :open .
+:ADV-104 a :Advisory ; :severity :critical ; :status :patched .
+:ADV-105 a :Advisory ; :severity :high     ; :status :open .
