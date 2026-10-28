@@ -7,7 +7,9 @@
 
 OntoCompute asks the same twelve questions both ways, several times each, in a browser tab. For every question it shows how often the answer was right, how many *different* answers came back, and how long it took. A third column runs a hand-written query on the reasoner with no model at all.
 
-Live demo: https://vishalmysore.github.io/ontoCompute/
+Live demo: https://vishalmysore.github.io/ontoCompute/ · Article: [docs/ARTICLE.md](docs/ARTICLE.md)
+
+Inspired by Miodrag Cekikj, ["Give the Knowledge Layer Something to Compute: Foundry IQ and the Fabric IQ Ontology, Measured"](https://medium.com/p/56aea5e1549f) (AI Advances, October 2026).
 
 ## The world
 
