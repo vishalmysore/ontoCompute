@@ -182,4 +182,6 @@ The pattern that comes out of this is a division of labour. The language model r
 
 Pick a model, choose how many runs per question, and press **Run every question**, or select one row and run just that question. You can also type your own question and see both modes answer it. The reasoner column, the proofs and the diagram work even in a browser without WebGPU. Results are measured in your browser and depend on the model, the temperature and your GPU. The raw results for both models used here are in the repository under `docs/results/`.
 
-Everything in the package ecosystem is invented. Credit for the measurements that prompted this goes to Miodrag Cekikj's article above; OntoCompute is an independent companion demo and isn't connected to that work or to Microsoft.
+## Disclaimer
+
+OntoCompute is a personal, independent project. It isn't affiliated with, endorsed by or connected to Miodrag Cekikj, Microsoft, or the makers of the models and libraries it uses; credit for the measurements that prompted it goes to Cekikj's article above. Every package, dependency and advisory in it is invented, and any resemblance to real software or real vulnerabilities is coincidental. The results come from small, quantised models running on one laptop, in a deliberately small world; they illustrate a pattern and are not a benchmark of any product or model. Nothing here is security advice. The views expressed are my own and not those of my employer.
